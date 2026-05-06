@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+
+# Bundled files (generated)
+src/renderer/renderer.bundle.js
+
+# Sample inputs / outputs (don't commit users' models)
+*.yft.xml
+*.obj
+
+# Environment and secrets
+.env
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE / Claude Code
+.idea/
+.vscode/
+*.swp
+.claude/
+CLAUDE.md

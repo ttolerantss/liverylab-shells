@@ -1,0 +1,75 @@
+{
+  "name": "liverylab-shells",
+  "version": "1.0.0",
+  "description": "LiveryLab Shells - extract paint-only bodyshells from GTA V .yft.xml files as clean OBJ meshes",
+  "main": "src/main/main.js",
+  "scripts": {
+    "bundle": "esbuild src/renderer/renderer.js --bundle --outfile=src/renderer/renderer.bundle.js --platform=node --external:electron --external:fs --external:path --external:os --external:fast-xml-parser --format=cjs",
+    "start": "npm run bundle && electron . --max-old-space-size=4096",
+    "dev": "npm run bundle && electron . --max-old-space-size=4096",
+    "build": "npm run bundle && electron-builder --win",
+    "build:dir": "npm run bundle && electron-builder --win --dir"
+  },
+  "keywords": [
+    "liverylab",
+    "gta",
+    "yft",
+    "obj",
+    "bodyshell",
+    "electron"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^40.0.0",
+    "electron-builder": "^26.4.0",
+    "esbuild": "^0.27.2"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^4.5.0"
+  },
+  "build": {
+    "appId": "com.liverylab.shells",
+    "productName": "LiveryLab Shells",
+    "icon": "src/assets/logol.ico",
+    "directories": {
+      "output": "dist"
+    },
+    "asar": true,
+    "asarUnpack": [
+      "**/*.node",
+      "**/src/assets/*.ico"
+    ],
+    "files": [
+      "src/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "src/assets/logol.ico",
+        "to": "icon.ico"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "src/assets/logol.ico",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "installerIcon": "src/assets/logol.ico",
+      "uninstallerIcon": "src/assets/logol.ico"
+    }
+  }
+}

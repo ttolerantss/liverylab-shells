@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; script-src 'self';">
+  <title>LiveryLab Shells</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================
+       DESIGN TOKENS (LiveryLab Design Language)
+       ============================================ */
+    :root {
+      --bg-deep: #0f0f10;
+      --bg-primary: #1a1a1a;
+      --bg-sidebar: #151515;
+      --bg-elevated: #222222;
+      --bg-input: #2a2a2a;
+      --bg-hover: #333333;
+
+      --text-primary: #ffffff;
+      --text-secondary: #cccccc;
+      --text-tertiary: #aaaaaa;
+      --text-muted: #888888;
+      --text-disabled: #666666;
+      --text-faint: #555555;
+
+      --brand-primary: #1868da;
+      --brand-hover: #2878ea;
+      --brand-accent: #4a9eff;
+
+      --border-default: #333333;
+      --border-subtle: #2a2a2a;
+      --border-input: #444444;
+      --border-hover: #555555;
+
+      --color-success: #4caf50;
+      --color-warning: #febc2e;
+      --color-error: #e74c3c;
+      --color-error-bright: #ff5f57;
+
+      --warning-bg: rgba(255, 200, 50, 0.08);
+      --warning-border: rgba(255, 200, 50, 0.2);
+      --warning-text: #b89a3a;
+
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-xl: 24px;
+      --space-xxl: 32px;
+
+      --radius-sm: 3px;
+      --radius-default: 4px;
+      --radius-md: 6px;
+      --radius-lg: 8px;
+      --radius-xl: 12px;
+
+      --transition-quick: 0.15s ease;
+      --transition-normal: 0.2s ease;
+      --transition-slow: 0.3s ease;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px;
+      color: var(--text-primary);
+      background: var(--bg-primary);
+      overflow: hidden;
+      user-select: none;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Custom Title Bar */
+    .titlebar {
+      display: flex;
+      align-items: center;
+      height: 36px;
+      background: var(--bg-primary);
+      border-bottom: 1px solid var(--border-subtle);
+      padding-right: 12px;
+      flex-shrink: 0;
+      z-index: 10000;
+    }
+    .titlebar-drag {
+      flex: 1;
+      height: 100%;
+      -webkit-app-region: drag;
+      display: flex;
+      align-items: center;
+      padding-left: 16px;
+    }
+    .titlebar-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0.3px;
+      pointer-events: none;
+    }
+    .titlebar-controls {
+      display: flex;
+      gap: 8px;
+      -webkit-app-region: no-drag;
+    }
+    .titlebar-btn {
+      width: 14px;
+      height: 14px;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: filter var(--transition-quick);
+      padding: 0;
+      -webkit-app-region: no-drag;
+    }
+    .titlebar-btn:hover { filter: brightness(0.85); }
+    .titlebar-btn.close { background: #ff5f57; }
+    .titlebar-btn.minimize { background: #febc2e; }
+    .titlebar-btn.maximize { background: #28c840; }
+    .titlebar-btn svg {
+      width: 8px; height: 8px;
+      stroke: rgba(0, 0, 0, 0.4);
+      stroke-width: 2;
+      fill: none;
+      opacity: 0;
+      transition: opacity var(--transition-quick);
+    }
+    .titlebar-controls:hover .titlebar-btn svg { opacity: 1; }
+
+    /* App body */
+    .app-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .app-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-xl);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-lg);
+    }
+
+    /* Drop zone */
+    .drop-zone-inner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: var(--space-xxl) var(--space-xl);
+      border: 2px dashed var(--border-default);
+      border-radius: var(--radius-lg);
+      color: var(--text-muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: border-color var(--transition-quick), color var(--transition-quick), background var(--transition-quick);
+      flex-shrink: 0;
+    }
+    .drop-zone-inner:hover {
+      border-color: var(--brand-primary);
+      color: var(--text-secondary);
+      background: rgba(24, 104, 218, 0.05);
+    }
+    .drop-zone-inner.drag-over {
+      border-color: var(--brand-accent);
+      color: var(--text-primary);
+      background: rgba(24, 104, 218, 0.1);
+    }
+    .drop-prompt {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+    .drop-prompt-title { font-size: 14px; font-weight: 500; color: var(--text-secondary); }
+    .drop-prompt-sub { font-size: 12px; color: var(--text-muted); }
+    .drop-prompt svg { width: 28px; height: 28px; opacity: 0.5; margin-bottom: 4px; }
+
+    .file-loaded .drop-zone-inner {
+      padding: var(--space-md) var(--space-lg);
+      border-style: solid;
+      border-width: 1px;
+      border-color: var(--border-subtle);
+      cursor: default;
+    }
+    .file-loaded .drop-zone-inner:hover {
+      background: transparent;
+      border-color: var(--border-subtle);
+      color: var(--text-muted);
+    }
+    .file-info {
+      display: none;
+      align-items: center;
+      gap: var(--space-sm);
+      width: 100%;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    .file-loaded .file-info { display: flex; }
+    .file-loaded .drop-prompt { display: none; }
+    .file-info svg { color: var(--text-muted); flex-shrink: 0; }
+    .file-name { color: var(--brand-accent); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+    .file-change-btn {
+      margin-left: var(--space-sm);
+      font-size: 11px;
+      color: var(--text-disabled);
+      cursor: pointer;
+      transition: color var(--transition-quick);
+      background: none;
+      border: none;
+      font-family: inherit;
+      -webkit-app-region: no-drag;
+    }
+    .file-change-btn:hover { color: var(--text-secondary); }
+
+    /* Cards */
+    .card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+    .card-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    /* Form rows */
+    .row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+    .row label { font-size: 12px; color: var(--text-tertiary); flex-shrink: 0; min-width: 120px; }
+    .row .grow { flex: 1; }
+
+    /* Path display */
+    .path-display {
+      flex: 1;
+      padding: 8px var(--space-md);
+      background: var(--bg-input);
+      border: 1px solid var(--border-input);
+      border-radius: var(--radius-default);
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+    .path-display.muted { color: var(--text-disabled); }
+
+    /* Buttons */
+    .btn {
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px var(--space-lg);
+      border: 1px solid var(--border-input);
+      border-radius: var(--radius-default);
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all var(--transition-quick);
+      white-space: nowrap;
+      -webkit-app-region: no-drag;
+    }
+    .btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+      border-color: var(--border-hover);
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary {
+      background: var(--brand-primary);
+      border-color: var(--brand-primary);
+      color: white;
+    }
+    .btn-primary:hover {
+      background: var(--brand-hover);
+      border-color: var(--brand-hover);
+      color: white;
+    }
+    .btn-sm { padding: 6px var(--space-md); font-size: 12px; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn:disabled:hover { background: transparent; color: var(--text-muted); border-color: var(--border-input); }
+    .btn-primary:disabled:hover { background: var(--brand-primary); border-color: var(--brand-primary); color: white; }
+
+    /* Checkbox */
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      cursor: pointer;
+    }
+    .checkbox-row input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      accent-color: var(--brand-primary);
+      cursor: pointer;
+    }
+    .checkbox-row label { cursor: pointer; font-size: 13px; color: var(--text-secondary); min-width: 0; }
+    .checkbox-row .hint { font-size: 11px; color: var(--text-muted); margin-left: auto; }
+
+    /* Shader chips editor */
+    .shader-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: var(--space-sm);
+      background: var(--bg-input);
+      border: 1px solid var(--border-input);
+      border-radius: var(--radius-default);
+      min-height: 38px;
+    }
+    .shader-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 6px 3px 10px;
+      background: rgba(24, 104, 218, 0.18);
+      border: 1px solid rgba(24, 104, 218, 0.4);
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+      color: var(--brand-accent);
+      user-select: none;
+    }
+    .shader-chip-remove {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: transparent;
+      border: none;
+      color: var(--brand-accent);
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      padding: 0;
+      opacity: 0.6;
+      transition: opacity var(--transition-quick), background var(--transition-quick);
+    }
+    .shader-chip-remove:hover { opacity: 1; background: rgba(255, 255, 255, 0.1); }
+    .shader-input {
+      flex: 1;
+      min-width: 140px;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+      font-size: 11px;
+      padding: 3px 6px;
+    }
+    .shader-input::placeholder { color: var(--text-faint); }
+    .shader-help {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      gap: var(--space-md);
+    }
+    .shader-help .link {
+      color: var(--text-tertiary);
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: inherit;
+      font-size: inherit;
+      padding: 0;
+      text-decoration: underline;
+      text-decoration-color: var(--text-faint);
+    }
+    .shader-help .link:hover { color: var(--brand-accent); }
+
+    /* Disclosure */
+    details.disclosure { border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); background: var(--bg-elevated); }
+    details.disclosure[open] { background: var(--bg-elevated); }
+    details.disclosure > summary {
+      list-style: none;
+      cursor: pointer;
+      padding: var(--space-md) var(--space-lg);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      font-weight: 600;
+    }
+    details.disclosure > summary::-webkit-details-marker { display: none; }
+    details.disclosure > summary::after {
+      content: '+';
+      color: var(--text-muted);
+      font-size: 16px;
+      font-weight: 400;
+    }
+    details.disclosure[open] > summary::after { content: '−'; }
+    details.disclosure > .body {
+      padding: 0 var(--space-lg) var(--space-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+
+    /* Action bar */
+    .action-bar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      padding: var(--space-lg) var(--space-xl);
+      background: var(--bg-sidebar);
+      border-top: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+    }
+    .action-bar .status {
+      flex: 1;
+      font-size: 12px;
+      color: var(--text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .action-bar .status.error { color: var(--color-error); }
+    .action-bar .status.success { color: var(--color-success); }
+    .action-bar .status.warn { color: var(--warning-text); }
+
+    .spinner {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      border-top-color: var(--brand-accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-right: 6px;
+      vertical-align: -2px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Result panel */
+    .result {
+      display: none;
+      flex-direction: column;
+      gap: var(--space-md);
+      border: 1px solid rgba(76, 175, 80, 0.3);
+      background: rgba(76, 175, 80, 0.06);
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+    }
+    .result.visible { display: flex; }
+    .result.warn { border-color: var(--warning-border); background: var(--warning-bg); }
+    .result.error { border-color: rgba(231, 76, 60, 0.3); background: rgba(231, 76, 60, 0.06); }
+
+    .result-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .result-title .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-success); }
+    .result.warn .result-title .dot { background: var(--color-warning); }
+    .result.error .result-title .dot { background: var(--color-error); }
+
+    .result-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-lg);
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+    .result-stats .stat .num { color: var(--text-primary); font-weight: 500; }
+    .result-output {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+    .result-output .path-display { background: var(--bg-input); }
+    .result-warnings {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--warning-text);
+      max-height: 120px;
+      overflow-y: auto;
+    }
+    .result-warnings li::before { content: '⚠ '; opacity: 0.7; }
+
+    /* Footer */
+    #footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 24px;
+      background: var(--bg-sidebar);
+      border-top: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+    }
+    .footer-left { display: flex; flex-direction: column; gap: 4px; }
+    .footer-copyright { font-size: 11px; color: #E9EDF5; }
+    .footer-branding {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      color: #E9EDF5;
+      letter-spacing: 0.5px;
+    }
+    .footer-branding a { display: flex; align-items: center; text-decoration: none; }
+    .footer-branding img { height: 10px; width: auto; }
+    .footer-right { display: flex; gap: 16px; }
+    .footer-right a {
+      font-size: 11px;
+      color: #E9EDF5;
+      text-decoration: none;
+    }
+    .footer-right a:hover { text-decoration: underline; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #555; }
+  </style>
+</head>
+<body>
+
+  <!-- Title Bar -->
+  <div class="titlebar">
+    <div class="titlebar-drag">
+      <span class="titlebar-label">LiveryLab Shells</span>
+    </div>
+    <div class="titlebar-controls">
+      <button class="titlebar-btn minimize" id="btn-minimize" title="Minimize">
+        <svg viewBox="0 0 12 12"><line x1="2" y1="6" x2="10" y2="6"/></svg>
+      </button>
+      <button class="titlebar-btn maximize" id="btn-maximize" title="Maximize">
+        <svg viewBox="0 0 12 12"><rect x="2.5" y="2.5" width="7" height="7"/></svg>
+      </button>
+      <button class="titlebar-btn close" id="btn-close" title="Close">
+        <svg viewBox="0 0 12 12"><line x1="3" y1="3" x2="9" y2="9"/><line x1="9" y1="3" x2="3" y2="9"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- App Content -->
+  <div class="app-content">
+
+    <div class="app-scroll">
+
+      <!-- Drop zone / file picker -->
+      <div id="drop-zone">
+        <div class="drop-zone-inner" id="drop-zone-inner">
+          <div class="drop-prompt">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <div class="drop-prompt-title">Drop a .yft.xml file here</div>
+            <div class="drop-prompt-sub">or click to browse</div>
+          </div>
+          <div class="file-info" id="file-info">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            <span class="file-name" id="file-name">filename.yft.xml</span>
+            <button class="file-change-btn" id="btn-change-file">Change</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Options -->
+      <div class="card">
+        <div class="card-title">Output</div>
+        <div class="row">
+          <label>Folder</label>
+          <div class="path-display muted" id="output-path-display">Same as input file</div>
+          <button class="btn btn-sm" id="btn-browse-output">Browse</button>
+          <button class="btn btn-sm" id="btn-reset-output" title="Reset to input file's folder">Reset</button>
+        </div>
+      </div>
+
+      <!-- Paint shader whitelist -->
+      <details class="disclosure" id="shader-disclosure">
+        <summary>Paint shader whitelist</summary>
+        <div class="body">
+          <div class="shader-chips" id="shader-chips">
+            <input type="text" class="shader-input" id="shader-input" placeholder="Type a shader name and press Enter to add...">
+          </div>
+          <div class="shader-help">
+            <span>Geometries with shader names matching this list will be kept. Names are case-insensitive; <code>.sps</code> is stripped automatically.</span>
+            <button class="link" id="btn-reset-shaders">Reset to defaults</button>
+          </div>
+        </div>
+      </details>
+
+      <!-- Result -->
+      <div class="result" id="result"></div>
+
+    </div>
+
+    <!-- Action bar -->
+    <div class="action-bar">
+      <div class="status" id="status">Drop a .yft.xml file to begin</div>
+      <button class="btn btn-primary" id="btn-extract" disabled>Extract Bodyshell</button>
+    </div>
+
+    <!-- Footer -->
+    <div id="footer">
+      <div class="footer-left">
+        <div class="footer-copyright">LiveryLab &middot; &copy; 2026 All rights reserved</div>
+        <div class="footer-branding">
+          <span>A</span>
+          <a href="https://danielswork.shop"><img src="../assets/dw.svg" alt="DW"></a>
+          <span>PROJECT</span>
+        </div>
+      </div>
+      <div class="footer-right">
+        <a href="https://liverylab.cc/privacy-policy">Privacy Policy</a>
+        <a href="https://liverylab.cc/terms-of-service">Terms of Service</a>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="renderer.bundle.js"></script>
+</body>
+</html>
