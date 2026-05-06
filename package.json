@@ -1,6 +1,6 @@
 {
   "name": "liverylab-shells",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "LiveryLab Shells - extract paint-only bodyshells from GTA V .yft.xml files as clean OBJ meshes",
   "main": "src/main/main.js",
   "scripts": {

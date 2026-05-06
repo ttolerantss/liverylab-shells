@@ -42,6 +42,8 @@ function buildGroupNames(geometries) {
  * @param {string} [options.sourceName] - original yft filename for header comment
  * @returns {{ writtenPath: string, vertexCount: number, faceCount: number, groupNames: string[] }}
  */
+const UV_CHANNEL = 1;
+
 function writeObj(options) {
   const { geometries, yUp = false, sourceName = '' } = options;
   if (!geometries || geometries.length === 0) {
@@ -54,6 +56,7 @@ function writeObj(options) {
   stream.write(`# LiveryLab Shells - paint-only OBJ export\n`);
   if (sourceName) stream.write(`# Source: ${sourceName}\n`);
   stream.write(`# Coordinate system: Y-up\n`);
+  stream.write(`# UV channel: TexCoord${UV_CHANNEL}\n`);
   stream.write(`# Geometries: ${geometries.length}\n\n`);
 
   let vertexOffset = 0;
@@ -67,7 +70,8 @@ function writeObj(options) {
     const name = groupNames[gi];
     const vCount = g.positions.length / 3;
     const hasN = !!g.normals;
-    const hasT = !!g.uvs;
+    const uvSource = g.texcoords && g.texcoords[UV_CHANNEL];
+    const hasT = !!uvSource;
 
     stream.write(`g ${name}\n`);
 
@@ -99,8 +103,8 @@ function writeObj(options) {
     }
     if (hasT) {
       for (let i = 0; i < vCount; i++) {
-        const u = g.uvs[i * 2];
-        const v = 1 - g.uvs[i * 2 + 1];
+        const u = uvSource[i * 2];
+        const v = uvSource[i * 2 + 1];
         stream.write(`vt ${fmt(u)} ${fmt(v)}\n`);
       }
     }

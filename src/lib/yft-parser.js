@@ -57,12 +57,15 @@ function parseVertexData(text, plan) {
   const positions = new Float32Array(count * 3);
   const hasNormal = plan.offsets.normal !== undefined;
   const normals = hasNormal ? new Float32Array(count * 3) : null;
-  const hasUV = plan.offsets.texcoord0 !== undefined;
-  const uvs = hasUV ? new Float32Array(count * 2) : null;
+
+  const texcoords = {};
+  for (const ch of [0, 1, 2]) {
+    const off = plan.offsets[`texcoord${ch}`];
+    if (off !== undefined) texcoords[ch] = new Float32Array(count * 2);
+  }
 
   const pOff = plan.offsets.position;
   const nOff = plan.offsets.normal;
-  const tOff = plan.offsets.texcoord0;
 
   for (let i = 0; i < count; i++) {
     const base = i * plan.stride;
@@ -74,12 +77,13 @@ function parseVertexData(text, plan) {
       normals[i * 3 + 1] = parseFloat(tokens[base + nOff + 1]);
       normals[i * 3 + 2] = parseFloat(tokens[base + nOff + 2]);
     }
-    if (uvs) {
-      uvs[i * 2]     = parseFloat(tokens[base + tOff]);
-      uvs[i * 2 + 1] = parseFloat(tokens[base + tOff + 1]);
+    for (const ch of Object.keys(texcoords)) {
+      const off = plan.offsets[`texcoord${ch}`];
+      texcoords[ch][i * 2]     = parseFloat(tokens[base + off]);
+      texcoords[ch][i * 2 + 1] = parseFloat(tokens[base + off + 1]);
     }
   }
-  return { count, positions, normals, uvs };
+  return { count, positions, normals, texcoords };
 }
 
 function parseIndexData(text) {
@@ -189,7 +193,7 @@ function parseYft(xmlText, options = {}) {
           shaderIndex,
           positions: verts.positions,
           normals: verts.normals,
-          uvs: verts.uvs,
+          texcoords: verts.texcoords,
           indices,
         });
       } catch (err) {
