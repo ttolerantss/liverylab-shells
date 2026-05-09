@@ -45,19 +45,23 @@ function buildGroupNames(geometries) {
 const UV_CHANNEL = 1;
 
 function writeObj(options) {
-  const { geometries, yUp = false, sourceName = '' } = options;
+  const { geometries, yUp = false, sourceName = '', mergePaints = false } = options;
   if (!geometries || geometries.length === 0) {
     throw new Error('No geometries to write');
   }
   const writtenPath = uniqueOutputPath(options.outputPath);
-  const groupNames = buildGroupNames(geometries);
+  const groupNames = mergePaints ? ['paint'] : buildGroupNames(geometries);
   const stream = fs.createWriteStream(writtenPath, { encoding: 'utf8' });
 
   stream.write(`# LiveryLab Shells - paint-only OBJ export\n`);
   if (sourceName) stream.write(`# Source: ${sourceName}\n`);
   stream.write(`# Coordinate system: Y-up\n`);
   stream.write(`# UV channel: TexCoord${UV_CHANNEL}\n`);
-  stream.write(`# Geometries: ${geometries.length}\n\n`);
+  stream.write(`# Geometries: ${geometries.length}${mergePaints ? ' (merged into single mesh)' : ''}\n\n`);
+
+  if (mergePaints) {
+    stream.write(`g paint\n`);
+  }
 
   let vertexOffset = 0;
   let normalOffset = 0;
@@ -67,13 +71,14 @@ function writeObj(options) {
 
   for (let gi = 0; gi < geometries.length; gi++) {
     const g = geometries[gi];
-    const name = groupNames[gi];
     const vCount = g.positions.length / 3;
     const hasN = !!g.normals;
     const uvSource = g.texcoords && g.texcoords[UV_CHANNEL];
     const hasT = !!uvSource;
 
-    stream.write(`g ${name}\n`);
+    if (!mergePaints) {
+      stream.write(`g ${groupNames[gi]}\n`);
+    }
 
     for (let i = 0; i < vCount; i++) {
       let x = g.positions[i * 3];

@@ -121,7 +121,7 @@ ipcMain.handle('show-in-folder', (event, filePath) => {
 });
 
 ipcMain.handle('extract-bodyshell', async (event, args) => {
-  const { inputPath, outputDir, yUp, shaderWhitelist } = args;
+  const { inputPath, outputDir, yUp, shaderWhitelist, mergePaints } = args;
   const win = BrowserWindow.fromWebContents(event.sender);
   const send = (stage, info) => {
     if (win && !win.isDestroyed()) win.webContents.send('extract-progress', { stage, info });
@@ -159,6 +159,7 @@ ipcMain.handle('extract-bodyshell', async (event, args) => {
       outputPath,
       geometries: result.geometries,
       yUp: !!yUp,
+      mergePaints: !!mergePaints,
       sourceName: path.basename(inputPath),
     });
 

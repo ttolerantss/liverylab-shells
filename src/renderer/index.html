@@ -268,6 +268,38 @@
     }
     .path-display.muted { color: var(--text-disabled); }
 
+    /* Option toggle row */
+    .opt-toggle {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      column-gap: var(--space-sm);
+      align-items: baseline;
+      margin-top: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--radius-default);
+      cursor: pointer;
+      transition: background var(--transition-quick);
+    }
+    .opt-toggle:hover { background: var(--bg-hover); }
+    .opt-toggle input[type="checkbox"] {
+      grid-row: 1 / span 2;
+      align-self: center;
+      width: 14px;
+      height: 14px;
+      accent-color: var(--brand-primary);
+      cursor: pointer;
+      margin: 0;
+    }
+    .opt-toggle-text {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    .opt-toggle-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      grid-column: 2;
+    }
+
     /* Buttons */
     .btn {
       font-family: inherit;
@@ -593,6 +625,11 @@
           <button class="btn btn-sm" id="btn-browse-output">Browse</button>
           <button class="btn btn-sm" id="btn-reset-output" title="Reset to input file's folder">Reset</button>
         </div>
+        <label class="opt-toggle" for="chk-merge-paints">
+          <input type="checkbox" id="chk-merge-paints">
+          <span class="opt-toggle-text">Merge paint materials into a single mesh</span>
+          <span class="opt-toggle-hint">One unified paint surface in livery-viewer instead of separate slots per shader</span>
+        </label>
       </div>
 
       <!-- Paint shader whitelist -->

@@ -8,6 +8,7 @@ const $ = (id) => document.getElementById(id);
 const state = {
   inputPath: null,
   outputDir: null,
+  mergePaints: false,
   shaders: [...DEFAULT_PAINT_SHADERS],
   busy: false,
 };
@@ -111,6 +112,11 @@ $('btn-browse-output').addEventListener('click', async () => {
 $('btn-reset-output').addEventListener('click', () => {
   state.outputDir = null;
   updateOutputPathDisplay();
+});
+
+// ===== Merge paints toggle =====
+$('chk-merge-paints').addEventListener('change', (e) => {
+  state.mergePaints = !!e.target.checked;
 });
 
 // ===== Shader whitelist editor =====
@@ -294,6 +300,7 @@ $('btn-extract').addEventListener('click', async () => {
       inputPath: state.inputPath,
       outputDir: state.outputDir,
       yUp: true,
+      mergePaints: state.mergePaints,
       shaderWhitelist: state.shaders,
     });
 
